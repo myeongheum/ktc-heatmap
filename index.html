@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>탱고 대회 악단별 출제 빈도</title>
+<title>KTC 악단별 출제 빈도</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
 <style>
@@ -31,9 +31,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
 <script>
-const { useState, useMemo, useEffect, useRef, useCallback, createElement: h } = React;
+var h = React.createElement;
+var useState = React.useState, useMemo = React.useMemo, useEffect = React.useEffect, useRef = React.useRef, useCallback = React.useCallback;
 
-const RAW_DATA = [
+var RAW_DATA = [
   { name: "Juan D'Arienzo", prelim: 23, semi: 15, final: 9 },
   { name: "Carlos Di Sarli", prelim: 24, semi: 9, final: 8 },
   { name: "Osvaldo Pugliese", prelim: 12, semi: 9, final: 8 },
@@ -49,26 +50,10 @@ const RAW_DATA = [
   { name: "Pedro Laurenz", prelim: 4, semi: 1, final: 0 },
   { name: "Edgardo Donato", prelim: 2, semi: 2, final: 0 },
   { name: "Osvaldo Fresedo", prelim: 3, semi: 0, final: 0 },
-  { name: "Ricardo Malerba", prelim: 2, semi: 0, final: 0 },
+  { name: "Ricardo Malerba", prelim: 2, semi: 0, final: 0 }
 ];
 
-const TOTAL = RAW_DATA.reduce(function(s, d) { return s + d.prelim + d.semi + d.final; }, 0);
-const SONG_DUR = 2.5;
-const TOTAL_SONGS = Math.floor(120 / SONG_DUR);
-
-function allocateSongs(data, n) {
-  var tots = data.map(function(d) { return d.prelim + d.semi + d.final; });
-  var g = tots.reduce(function(a, b) { return a + b; }, 0);
-  var exact = tots.map(function(t) { return (t / g) * n; });
-  var fl = exact.map(function(e) { return Math.floor(e); });
-  var rem = n - fl.reduce(function(a, b) { return a + b; }, 0);
-  var rs = exact.map(function(e, i) { return { i: i, r: e - fl[i] }; }).sort(function(a, b) { return b.r - a.r; });
-  for (var k = 0; k < rem; k++) fl[rs[k].i]++;
-  return fl;
-}
-
-var SONGS = allocateSongs(RAW_DATA, TOTAL_SONGS);
-var MAX_SONGS = Math.max.apply(null, SONGS);
+var TOTAL = RAW_DATA.reduce(function(s, d) { return s + d.prelim + d.semi + d.final; }, 0);
 
 function getColor(d) {
   var t = d.prelim + d.semi + d.final;
@@ -138,22 +123,19 @@ function App() {
   if (cw === 0) return h("div", { ref: wrapRef, style: { width: "100%", minHeight: 100 } });
 
   var fs = function(base) { return Math.max(base * (isMobile ? 0.82 : isTablet ? 0.9 : 1), 7); };
-
   var modes = [["total", "전체"], ["prelim", "예선"], ["semi", "준결승"], ["final", "결승"]];
 
-  // Build cells
   var cells = treemapData.map(function(node, i) {
     var d = node.data;
     var w = node.x1 - node.x0;
     var ht = node.y1 - node.y0;
     var total = d.prelim + d.semi + d.final;
-    var songs = SONGS[d.idx];
     var isActive = active === i;
     var mn = isMobile ? 0.7 : 1;
     var showName = w > 36 * mn && ht > 20 * mn;
     var showTotal = w > 50 * mn && ht > 38 * mn;
     var showBreak = w > 72 * mn && ht > 56 * mn;
-    var showSongs = w > 42 * mn && ht > 68 * mn;
+    var showPct = w > 85 * mn && ht > 72 * mn;
     var big = w > 110 * mn && ht > 70 * mn;
     var last = d.name.split(" ").pop();
     var shortName = w < 70 * mn ? last : (isMobile && w < 100 ? last : d.name);
@@ -162,21 +144,17 @@ function App() {
       h("rect", { x: node.x0, y: node.y0, width: w, height: ht, fill: getColor(d), stroke: "#08080b", strokeWidth: isMobile ? 1 : 1.5, rx: 2, opacity: active !== null && !isActive ? 0.3 : 1, style: { transition: "opacity 0.15s" } }),
       h("rect", { x: node.x0, y: node.y0, width: w, height: ht, fill: "url(#cg)", rx: 2 })
     ];
-
     if (showName) {
-      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + (showTotal ? ht * 0.24 : ht / 2), textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontWeight: "600", fontSize: fs(big ? 12.5 : w > 80 ? 10 : 8), opacity: 0.95 }, shortName));
+      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + (showTotal ? ht * 0.26 : ht / 2), textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontWeight: "600", fontSize: fs(big ? 12.5 : w > 80 ? 10 : 8), opacity: 0.95 }, shortName));
     }
     if (showTotal) {
-      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + ht * 0.42, textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontWeight: "700", fontSize: fs(big ? 18 : 13), opacity: 0.9 }, total + "회"));
+      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + ht * 0.46, textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontWeight: "700", fontSize: fs(big ? 20 : 14), opacity: 0.9 }, total + "회"));
     }
     if (showBreak) {
-      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + ht * 0.58, textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontSize: fs(7.5), opacity: 0.5 }, "예" + d.prelim + " · 준" + d.semi + " · 결" + d.final));
+      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + ht * 0.63, textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontSize: fs(7.5), opacity: 0.5 }, "예" + d.prelim + " · 준" + d.semi + " · 결" + d.final));
     }
-    if (showSongs && songs > 0) {
-      children.push(h("g", null,
-        h("rect", { x: node.x0 + w / 2 - (big ? 28 : 20), y: node.y0 + ht * 0.72 - 7, width: big ? 56 : 40, height: 14, rx: 7, fill: "rgba(0,0,0,0.4)" }),
-        h("text", { x: node.x0 + w / 2, y: node.y0 + ht * 0.72, textAnchor: "middle", dominantBaseline: "central", fill: "#ffd54f", fontFamily: "'JetBrains Mono', monospace", fontWeight: "600", fontSize: fs(big ? 10 : 8.5), opacity: 0.95 }, "♪ " + songs + "곡")
-      ));
+    if (showPct) {
+      children.push(h("text", { x: node.x0 + w / 2, y: node.y0 + ht * 0.77, textAnchor: "middle", dominantBaseline: "central", fill: "#fff", fontFamily: "'JetBrains Mono', monospace", fontSize: fs(7), opacity: 0.35 }, ((total / TOTAL) * 100).toFixed(1) + "%"));
     }
 
     return h("g", {
@@ -192,16 +170,12 @@ function App() {
   if (active !== null && treemapData[active]) {
     var td = treemapData[active].data;
     var ttotal = td.prelim + td.semi + td.final;
-    var tsongs = SONGS[td.idx];
-    var tmins = (tsongs * SONG_DUR).toFixed(0);
-
     var tipStyle = isMobile
       ? { position: "absolute", bottom: 0, left: 0, right: 0, borderRadius: "10px 10px 0 0" }
       : { position: "absolute", top: 10, right: 10, borderRadius: 6, minWidth: 195 };
 
     var tipChildren = [];
     if (isMobile) tipChildren.push(h("div", { style: { width: 28, height: 3, background: "#444", borderRadius: 2, margin: "0 auto 8px" } }));
-
     tipChildren.push(
       h("div", { style: { display: isMobile ? "flex" : "block", gap: 12, alignItems: "flex-start" } },
         h("div", { style: { flex: 1 } },
@@ -216,32 +190,15 @@ function App() {
           h("div", { style: { color: "#888" } },
             "합계 ", h("span", { style: { color: "#ddd" } }, ttotal + "회"), " ",
             h("span", { style: { color: "#555" } }, "(" + ((ttotal / TOTAL) * 100).toFixed(1) + "%)")
-          ),
-          h("div", { style: { color: "#ffd54f", fontWeight: 600 } },
-            "♪ " + tsongs + "곡 ", h("span", { style: { color: "#888", fontWeight: 400 } }, "(" + tmins + "분)")
           )
         )
       )
     );
-
     tooltip = h("div", {
       className: "tip-enter",
       style: Object.assign({}, tipStyle, { background: "rgba(8,8,12,0.97)", border: "1px solid #2a2a30", padding: isMobile ? "10px 14px 14px" : "12px 16px", color: "#e8e6e0", fontSize: 11, lineHeight: 1.8, backdropFilter: "blur(12px)", zIndex: 10 })
     }, tipChildren);
   }
-
-  // Playlist rows
-  var sorted = RAW_DATA.map(function(d, i) { return Object.assign({}, d, { songs: SONGS[i] }); })
-    .sort(function(a, b) { return b.songs - a.songs; });
-
-  var playlistRows = sorted.map(function(d) {
-    var barW = d.songs > 0 ? (d.songs / MAX_SONGS) * 100 : 0;
-    return h("div", { key: d.name, style: { display: "flex", alignItems: "center", gap: 4, padding: isMobile ? "4px 5px" : "3px 6px", borderRadius: 3, position: "relative", overflow: "hidden" } },
-      h("div", { style: { position: "absolute", left: 0, top: 0, bottom: 0, width: barW + "%", background: getColor(d), opacity: 0.12, borderRadius: 3 } }),
-      h("span", { style: { color: d.songs > 0 ? "#bbb" : "#444", fontSize: isMobile ? 9.5 : 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, zIndex: 1 } }, d.name.split(" ").pop()),
-      h("span", { style: { color: d.songs > 0 ? "#ffd54f" : "#333", fontSize: isMobile ? 9.5 : 10, fontWeight: 600, flexShrink: 0, zIndex: 1 } }, d.songs > 0 ? d.songs + "곡" : "—")
-    );
-  });
 
   return h("div", {
     ref: wrapRef,
@@ -250,17 +207,15 @@ function App() {
     // Header
     h("div", { style: { textAlign: "center", marginBottom: isMobile ? 8 : 14, width: "100%", maxWidth: W, padding: "0 4px" } },
       h("h1", { style: { fontFamily: "'Playfair Display', serif", fontSize: isMobile ? 18 : isTablet ? 22 : 26, color: "#e8e6e0", margin: "0 0 4px", fontWeight: 700 } }, "탱고 대회 악단별 출제 빈도"),
-      h("p", { style: { color: "#555", fontSize: isMobile ? 8.5 : 10, margin: 0, letterSpacing: "1px", textTransform: "uppercase", lineHeight: 1.5 } }, "Orchestra Frequency Map · " + TOTAL_SONGS + "곡 플레이리스트 배분 포함")
+      h("p", { style: { color: "#555", fontSize: isMobile ? 8.5 : 10, margin: 0, letterSpacing: "1px", textTransform: "uppercase", lineHeight: 1.5 } }, "Orchestra Frequency Map · 예선 + 준결승 + 결승")
     ),
-
     // Mode buttons
     h("div", { style: { display: "flex", gap: 1, marginBottom: isMobile ? 6 : 12, borderRadius: 4, overflow: "hidden" } },
       modes.map(function(m) {
-        return h("button", { key: m[0], className: "mbtn" + (mode === m[0] ? " on" : ""), onClick: function() { setMode(m[0]); }, style: { padding: isMobile ? "8px 10px" : "5px 14px", fontSize: isMobile ? 10 : 10 } }, m[1]);
+        return h("button", { key: m[0], className: "mbtn" + (mode === m[0] ? " on" : ""), onClick: function() { setMode(m[0]); }, style: { padding: isMobile ? "8px 10px" : "5px 14px", fontSize: 10 } }, m[1]);
       })
     ),
-
-    // Treemap SVG
+    // Treemap
     h("div", { style: { position: "relative", width: W, height: H, background: "#0e0e12", borderRadius: 4, overflow: "hidden", border: "1px solid #1a1a1e" } },
       h("svg", { width: W, height: H, style: { display: "block" } },
         h("defs", null,
@@ -273,31 +228,14 @@ function App() {
       ),
       tooltip
     ),
-
     // Legend
     h("div", { style: { width: "100%", maxWidth: W, marginTop: 10, padding: "0 2px" } },
-      h("div", { style: { display: "flex", gap: isMobile ? 8 : 24, flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "flex-start" } },
-        h("div", { style: { flex: 1 } },
-          h("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } },
-            h("span", { style: { color: "#b8443a", fontSize: 8.5, letterSpacing: "0.5px" } }, "예선 집중"),
-            h("span", { style: { color: "#1a7a45", fontSize: 8.5, letterSpacing: "0.5px" } }, "결승 다수 진출")
-          ),
-          h("div", { style: { height: 5, borderRadius: 3, background: "linear-gradient(to right, #b8443a, #d4603c, #c47522, #b08a28, #8a9a2e, #66a832, #4caf50, #3a9e5f, #2d8b57, #1a7a45)" } })
-        ),
-        h("div", { style: { display: "flex", alignItems: "center", gap: 6, justifyContent: isMobile ? "center" : "flex-start" } },
-          h("div", { style: { background: "rgba(0,0,0,0.35)", borderRadius: 8, padding: "2px 8px", border: "1px solid #2a2a30" } },
-            h("span", { style: { color: "#ffd54f", fontSize: 9, fontWeight: 600 } }, "♪ N곡")
-          ),
-          h("span", { style: { color: "#555", fontSize: 8.5 } }, "= 플레이리스트 배분")
-        )
-      )
-    ),
-
-    // Playlist table
-    h("div", { style: { width: "100%", maxWidth: W, marginTop: 14, background: "#0e0e12", border: "1px solid #1a1a1e", borderRadius: 6, padding: isMobile ? "10px 8px" : "14px 18px" } },
-      h("div", { style: { fontSize: isMobile ? 10.5 : 12, color: "#aaa", fontWeight: 600, marginBottom: 8, letterSpacing: "0.5px" } }, "🎵 2시간 플레이리스트 (" + TOTAL_SONGS + "곡 × 2분 30초)"),
-      h("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(4, 1fr)", gap: isMobile ? "1px 6px" : "3px 12px" } }, playlistRows),
-      h("div", { style: { marginTop: 8, fontSize: 8, color: "#444", borderTop: "1px solid #1a1a1e", paddingTop: 6, lineHeight: 1.6 } }, "면적 = 출제 횟수 · 색상 = 라운드 깊이 가중 (결승×3 + 준결승×1.5 + 예선×0.5) · 곡수 = 최대잔여법 비례배분")
+      h("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 3 } },
+        h("span", { style: { color: "#b8443a", fontSize: 8.5, letterSpacing: "0.5px" } }, "예선 집중"),
+        h("span", { style: { color: "#1a7a45", fontSize: 8.5, letterSpacing: "0.5px" } }, "결승 다수 진출")
+      ),
+      h("div", { style: { height: 5, borderRadius: 3, background: "linear-gradient(to right, #b8443a, #d4603c, #c47522, #b08a28, #8a9a2e, #66a832, #4caf50, #3a9e5f, #2d8b57, #1a7a45)" } }),
+      h("div", { style: { marginTop: 8, fontSize: 8, color: "#444", lineHeight: 1.6 } }, "면적 = 출제 횟수 · 색상 = 라운드 깊이 가중 (결승×3 + 준결승×1.5 + 예선×0.5)")
     )
   );
 }
